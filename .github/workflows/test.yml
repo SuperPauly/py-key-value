@@ -39,6 +39,8 @@ jobs:
 
       - name: "Install uv"
         uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.5.27"
 
       - name: "Install"
         run: uv sync --locked --group dev
@@ -78,28 +80,30 @@ jobs:
 
       - name: "Install uv"
         uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.5.27"
 
-      - name: "Set pytest worker count"
-        id: pytest-workers
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "count=2" >> $GITHUB_OUTPUT
-          else
-            echo "count=auto" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
+      - name: "Set pytest worker count (Windows)"
+        id: pytest-workers-windows
+        if: runner.os == 'Windows'
+        run: echo "count=2" >> $env:GITHUB_OUTPUT
+
+      - name: "Set pytest worker count (non-Windows)"
+        id: pytest-workers-other
+        if: runner.os != 'Windows'
+        run: echo "count=auto" >> $GITHUB_OUTPUT
 
       - name: "Install latest dependencies"
         run: uv sync --locked --group dev --python ${{ matrix.python-version }}
 
       - name: "Test with latest dependencies"
-        run: uv run pytest tests -vv -n ${{ steps.pytest-workers.outputs.count }}
+        run: uv run pytest tests -vv -n ${{ steps.pytest-workers-windows.outputs.count || steps.pytest-workers-other.outputs.count }}
 
       - name: "Install oldest dependencies"
         run: uv sync --group dev --python ${{ matrix.python-version }} --resolution lowest-direct
 
       - name: "Test with oldest dependencies"
-        run: uv run pytest tests -vv -n ${{ steps.pytest-workers.outputs.count }}
+        run: uv run pytest tests -vv -n ${{ steps.pytest-workers-windows.outputs.count || steps.pytest-workers-other.outputs.count }}
 
       - name: "Build"
         run: uv build .
@@ -130,28 +134,30 @@ jobs:
 
       - name: "Install uv"
         uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.5.27"
 
-      - name: "Set pytest worker count"
-        id: pytest-workers
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "count=2" >> $GITHUB_OUTPUT
-          else
-            echo "count=auto" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
+      - name: "Set pytest worker count (Windows)"
+        id: pytest-workers-windows
+        if: runner.os == 'Windows'
+        run: echo "count=2" >> $env:GITHUB_OUTPUT
+
+      - name: "Set pytest worker count (non-Windows)"
+        id: pytest-workers-other
+        if: runner.os != 'Windows'
+        run: echo "count=auto" >> $GITHUB_OUTPUT
 
       - name: "Install latest dependencies"
         run: uv sync --locked --group dev --python ${{ matrix.python-version }}
 
       - name: "Test with latest dependencies"
-        run: uv run pytest tests -vv -n ${{ steps.pytest-workers.outputs.count }}
+        run: uv run pytest tests -vv -n ${{ steps.pytest-workers-windows.outputs.count || steps.pytest-workers-other.outputs.count }}
 
       - name: "Install oldest dependencies"
         run: uv sync --group dev --python ${{ matrix.python-version }} --resolution lowest-direct
 
       - name: "Test with oldest dependencies"
-        run: uv run pytest tests -vv -n ${{ steps.pytest-workers.outputs.count }}
+        run: uv run pytest tests -vv -n ${{ steps.pytest-workers-windows.outputs.count || steps.pytest-workers-other.outputs.count }}
 
       - name: "Build"
         run: uv build .

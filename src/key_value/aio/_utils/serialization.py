@@ -5,7 +5,10 @@ to define their own serialization strategy. Store-specific adapter implementatio
 should be defined within their respective store modules.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from collections.abc import Callable  # noqa: TC003 - used at runtime by beartype
 from datetime import datetime
 from typing import Any, Literal, TypeVar
 
@@ -35,6 +38,11 @@ def parse_datetime_str(value: str) -> datetime:
     except ValueError:
         msg = f"Invalid datetime string: {value}"
         raise DeserializationError(message=msg) from None
+
+
+def passthrough_datetime(value: datetime) -> datetime:
+    """Return a datetime unchanged."""
+    return value
 
 
 class SerializationAdapter(ABC):
@@ -73,13 +81,18 @@ class SerializationAdapter(ABC):
 
         managed_entry_proto: dict[str, Any] = {}
 
-        if self._date_format in ("isoformat", "datetime"):
-            expected_type = str if self._date_format == "isoformat" else datetime
-            parser = parse_datetime_str if self._date_format == "isoformat" else (lambda value: value)
-            if created_at := key_must_be(data, key="created_at", expected_type=expected_type):
-                managed_entry_proto["created_at"] = parser(created_at)
-            if expires_at := key_must_be(data, key="expires_at", expected_type=expected_type):
-                managed_entry_proto["expires_at"] = parser(expires_at)
+        if self._date_format == "isoformat":
+            parser_iso: Callable[[str], datetime] = parse_datetime_str
+            if created_at := key_must_be(data, key="created_at", expected_type=str):
+                managed_entry_proto["created_at"] = parser_iso(created_at)
+            if expires_at := key_must_be(data, key="expires_at", expected_type=str):
+                managed_entry_proto["expires_at"] = parser_iso(expires_at)
+        elif self._date_format == "datetime":
+            parser_datetime: Callable[[datetime], datetime] = passthrough_datetime
+            if created_at := key_must_be(data, key="created_at", expected_type=datetime):
+                managed_entry_proto["created_at"] = parser_datetime(created_at)
+            if expires_at := key_must_be(data, key="expires_at", expected_type=datetime):
+                managed_entry_proto["expires_at"] = parser_datetime(expires_at)
 
         if "value" not in data:
             msg = "Value field not found"
