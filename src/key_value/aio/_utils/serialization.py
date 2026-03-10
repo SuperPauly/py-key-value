@@ -5,9 +5,12 @@ to define their own serialization strategy. Store-specific adapter implementatio
 should be defined within their respective store modules.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from collections.abc import Callable  # noqa: TC003 - used at runtime by beartype
 from datetime import datetime
-from typing import Any, Callable, Literal, TypeVar
+from typing import Any, Literal, TypeVar
 
 from key_value.aio._utils.beartype import bear_enforce
 from key_value.aio._utils.managed_entry import ManagedEntry, dump_to_json, load_from_json, verify_dict
